@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<meta name="robots" content="noindex">
+<html>
+<body>
+	<canvas id="myCanvas" width="300" height="300" style="border:1px solid #000;"></canvas>
+</body>
+<script> "use strict"
+	window.onload = function() {
+		var canvas = document.getElementById('myCanvas');
+		var context = canvas.getContext('2d');
+
+		var t = 0;
+		var headX = 150, headY = 150;  
+		var tiltAngle = 0;      
+		var leftEarAngle = 0;       
+		var rightEarAngle = 0;
+		var eyeHeight = 8;             
+		var smileAmount = 0;            
+
+		function update() {
+			t += 0.05;
+
+			headX = 150 + Math.cos(t * 0.4) * 60;
+			headY = 150 + Math.sin(t * 0.8) * 30;
+
+			tiltAngle = Math.sin(t) * 0.2;
+
+			leftEarAngle  = Math.sin(t * 4) * 0.3;
+			rightEarAngle = Math.sin(t * 4 + 1.5) * 0.3; 
+
+			var blink = Math.sin(t * 3);
+			eyeHeight = blink > 0.9 ? 1 : 8;
+
+			smileAmount = (Math.sin(t * 0.6) + 1) / 2; 
+		}
+
+		function draw() {
+			context.clearRect(0, 0, canvas.width, canvas.height);
+
+			context.save();
+			context.translate(headX, headY);
+			context.rotate(tiltAngle);
+
+			context.beginPath();
+			context.arc(0, 0, 70, 0, 2 * Math.PI, false);
+			context.fillStyle = "orange";
+			context.fill();
+			context.strokeStyle = "#000";
+			context.stroke();
+
+			context.save();
+			context.translate(-35, -55);     
+			context.rotate(leftEarAngle);     
+			context.beginPath();
+			context.moveTo(-20, 5);
+			context.lineTo(0, -45);
+			context.lineTo(20, 10);
+			context.closePath();
+			context.fillStyle = "orange";
+			context.fill();
+			context.stroke();
+			context.restore();
+
+			context.save();
+			context.translate(35, -55);
+			context.rotate(rightEarAngle);
+			context.beginPath();
+			context.moveTo(-20, 10);
+			context.lineTo(0, -45);
+			context.lineTo(20, 5);
+			context.closePath();
+			context.fillStyle = "orange";
+			context.fill();
+			context.stroke();
+			context.restore();
+
+			context.save();
+			context.translate(-25, -10);
+			context.scale(1, eyeHeight / 8);
+			context.beginPath();
+			context.arc(0, 0, 8, 0, 2 * Math.PI, false);
+			context.fillStyle = "black";
+			context.fill();
+			context.restore();
+
+			context.save();
+			context.translate(25, -10);
+			context.scale(1, eyeHeight / 8);
+			context.beginPath();
+			context.arc(0, 0, 8, 0, 2 * Math.PI, false);
+			context.fillStyle = "black";
+			context.fill();
+			context.restore();
+
+			context.beginPath();
+			context.moveTo(-7, 10);
+			context.lineTo(7, 10);
+			context.lineTo(0, 20);
+			context.closePath();
+			context.fillStyle = "pink";
+			context.fill();
+
+			var corners = 25;                    
+			var dip = smileAmount * 25;           
+			context.beginPath();
+			context.moveTo(-corners, 22);
+			context.quadraticCurveTo(0, 22 + dip, corners, 22);
+			context.strokeStyle = "#000";
+			context.lineWidth = 2;
+			context.stroke();
+
+			context.restore();
+		}
+
+		function mainLoop() {
+			update();
+			draw();
+			requestAnimationFrame(mainLoop);
+		}
+		requestAnimationFrame(mainLoop);
+	};
+</script>
+<head>
+  <meta name="description" content="Canvas Drawing Example - Animated Cat Face">
+  <meta charset="utf-8">
+  <title>Animated Cat Face</title>
+</head>
+</html>
