@@ -3,43 +3,102 @@
 <html>
 <body>
 	<canvas id="myCanvas" width="300" height="300" style="border:1px solid #000;"></canvas>
+	<p style="font-family: sans-serif; font-size: 14px;">
+		Arrow keys move the cat. Press space for a happy burst.
+	</p>
 </body>
 <script> "use strict"
 	window.onload = function() {
 		var canvas = document.getElementById('myCanvas');
 		var context = canvas.getContext('2d');
-
 		var t = 0;
-		var headX = 150, headY = 150;  
-		var tiltAngle = 0;      
-		var leftEarAngle = 0;       
-		var rightEarAngle = 0;
-		var eyeHeight = 8;             
-		var smileAmount = 0;            
+		var happyBoost = 0;                
+		var moveSpeed = 2.5;              
 
-		function update() {
-			t += 0.05;
-
-			headX = 150 + Math.cos(t * 0.4) * 60;
-			headY = 150 + Math.sin(t * 0.8) * 30;
-
-			tiltAngle = Math.sin(t) * 0.2;
-
-			leftEarAngle  = Math.sin(t * 4) * 0.3;
-			rightEarAngle = Math.sin(t * 4 + 1.5) * 0.3; 
-
-			var blink = Math.sin(t * 3);
-			eyeHeight = blink > 0.9 ? 1 : 8;
-
-			smileAmount = (Math.sin(t * 0.6) + 1) / 2; 
+		function makeState() {
+			return {
+				headX: 150, headY: 150,
+				tiltAngle: 0,
+				leftEarAngle: 0, rightEarAngle: 0,
+				eyeHeight: 8,
+				smileAmount: 0
+			};
+		}
+		function copyState(s) {
+			return {
+				headX: s.headX, headY: s.headY,
+				tiltAngle: s.tiltAngle,
+				leftEarAngle: s.leftEarAngle, rightEarAngle: s.rightEarAngle,
+				eyeHeight: s.eyeHeight,
+				smileAmount: s.smileAmount
+			};
+		}
+		function lerp(a, b, alpha) {
+			return a + (b - a) * alpha;
 		}
 
-		function draw() {
+		var current = makeState();  
+		var previous = makeState(); 
+		var keysDown = {};
+
+		window.addEventListener('keydown', function(e) {
+			keysDown[e.key] = true;
+			if (e.key === ' ') {
+				happyBoost = 1;           
+				e.preventDefault();         
+			}
+			if (e.key.indexOf('Arrow') === 0) {
+				e.preventDefault();
+			}
+		});
+
+		window.addEventListener('keyup', function(e) {
+			delete keysDown[e.key];
+		});
+
+		function clamp(value, min, max) {
+			return Math.max(min, Math.min(max, value));
+		}
+
+
+		function update() {
+			t += 1 / 60; 
+
+			if (keysDown['ArrowLeft'])  current.headX -= moveSpeed;
+			if (keysDown['ArrowRight']) current.headX += moveSpeed;
+			if (keysDown['ArrowUp'])    current.headY -= moveSpeed;
+			if (keysDown['ArrowDown'])  current.headY += moveSpeed;
+
+			current.headX = clamp(current.headX, 90, 210);
+			current.headY = clamp(current.headY, 110, 230);
+
+			current.tiltAngle = Math.sin(t) * 0.2;
+			current.leftEarAngle  = Math.sin(t * 4) * 0.3;
+			current.rightEarAngle = Math.sin(t * 4 + 1.5) * 0.3;
+
+			var blink = Math.sin(t * 3);
+			current.eyeHeight = blink > 0.9 ? 1 : 8;
+
+			happyBoost = Math.max(0, happyBoost - 0.02);
+			current.smileAmount = clamp((Math.sin(t * 0.6) + 1) / 2 + happyBoost, 0, 1);
+		}
+
+		function draw(alpha) {
+			var r = {
+				headX: lerp(previous.headX, current.headX, alpha),
+				headY: lerp(previous.headY, current.headY, alpha),
+				tiltAngle: lerp(previous.tiltAngle, current.tiltAngle, alpha),
+				leftEarAngle: lerp(previous.leftEarAngle, current.leftEarAngle, alpha),
+				rightEarAngle: lerp(previous.rightEarAngle, current.rightEarAngle, alpha),
+				eyeHeight: lerp(previous.eyeHeight, current.eyeHeight, alpha),
+				smileAmount: lerp(previous.smileAmount, current.smileAmount, alpha)
+			};
+
 			context.clearRect(0, 0, canvas.width, canvas.height);
 
 			context.save();
-			context.translate(headX, headY);
-			context.rotate(tiltAngle);
+			context.translate(r.headX, r.headY);
+			context.rotate(r.tiltAngle);
 
 			context.beginPath();
 			context.arc(0, 0, 70, 0, 2 * Math.PI, false);
@@ -49,8 +108,8 @@
 			context.stroke();
 
 			context.save();
-			context.translate(-35, -55);     
-			context.rotate(leftEarAngle);     
+			context.translate(-35, -55);
+			context.rotate(r.leftEarAngle);
 			context.beginPath();
 			context.moveTo(-20, 5);
 			context.lineTo(0, -45);
@@ -63,7 +122,7 @@
 
 			context.save();
 			context.translate(35, -55);
-			context.rotate(rightEarAngle);
+			context.rotate(r.rightEarAngle);
 			context.beginPath();
 			context.moveTo(-20, 10);
 			context.lineTo(0, -45);
@@ -76,7 +135,7 @@
 
 			context.save();
 			context.translate(-25, -10);
-			context.scale(1, eyeHeight / 8);
+			context.scale(1, r.eyeHeight / 8);
 			context.beginPath();
 			context.arc(0, 0, 8, 0, 2 * Math.PI, false);
 			context.fillStyle = "black";
@@ -85,7 +144,7 @@
 
 			context.save();
 			context.translate(25, -10);
-			context.scale(1, eyeHeight / 8);
+			context.scale(1, r.eyeHeight / 8);
 			context.beginPath();
 			context.arc(0, 0, 8, 0, 2 * Math.PI, false);
 			context.fillStyle = "black";
@@ -100,8 +159,8 @@
 			context.fillStyle = "pink";
 			context.fill();
 
-			var corners = 25;                    
-			var dip = smileAmount * 25;           
+			var corners = 25;
+			var dip = r.smileAmount * 25;
 			context.beginPath();
 			context.moveTo(-corners, 22);
 			context.quadraticCurveTo(0, 22 + dip, corners, 22);
@@ -112,17 +171,42 @@
 			context.restore();
 		}
 
-		function mainLoop() {
-			update();
-			draw();
+		var FIXED_DT = 1000 / 60;   
+		var MAX_FRAME_TIME = 250;   
+		var accumulator = 0;
+		var lastTime = null;
+		var frameCount = 0;
+
+		function mainLoop(currentTime) {
+			if (lastTime === null) lastTime = currentTime;
+			var frameTime = currentTime - lastTime;
+			lastTime = currentTime;
+			if (frameTime > MAX_FRAME_TIME) frameTime = MAX_FRAME_TIME;
+
+			accumulator += frameTime;
+
+		
+			while (accumulator >= FIXED_DT) {
+				previous = copyState(current); 
+				update();                     
+				accumulator -= FIXED_DT;
+				// console.log("headX = " + current.headX); 
+			}
+
+
+			var alpha = accumulator / FIXED_DT;
+			draw(alpha); 
+			frameCount++;
+			// console.log("frame: " + frameCount);
+
 			requestAnimationFrame(mainLoop);
 		}
 		requestAnimationFrame(mainLoop);
 	};
 </script>
 <head>
-  <meta name="description" content="Canvas Drawing Example - Animated Cat Face">
+  <meta name="description" content="Canvas Drawing Example - Animated Cat Face with Input">
   <meta charset="utf-8">
-  <title>Animated Cat Face</title>
+  <title>Interactive Cat Face</title>
 </head>
 </html>
